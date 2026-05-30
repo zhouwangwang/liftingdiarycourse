@@ -1,67 +1,20 @@
-"use client";
-
-import { useState } from "react";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { auth } from "@clerk/nextjs/server";
+import { format, parse} from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { CalendarPicker } from "./calendar-picker";
+import { getWorkoutsForUserOnDate } from "@/data/workouts";
 
-type Exercise = {
-  name: string;
-  sets: { setNumber: number; reps: number | null; weight: string | null }[];
-};
+interface DashboardPageProps {
+  searchParams: Promise<{ date?: string }>;
+}
 
-type Workout = {
-  id: number;
-  name: string;
-  startedAt: Date;
-  completedAt: Date | null;
-  exercises: Exercise[];
-};
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const { userId } = await auth();
+  const { date: dateParam } = await searchParams;
 
-const MOCK_WORKOUTS: Workout[] = [
-  {
-    id: 1,
-    name: "Upper Body",
-    startedAt: new Date(),
-    completedAt: new Date(),
-    exercises: [
-      {
-        name: "Bench Press",
-        sets: [
-          { setNumber: 1, reps: 8, weight: "80.00" },
-          { setNumber: 2, reps: 8, weight: "80.00" },
-          { setNumber: 3, reps: 6, weight: "85.00" },
-        ],
-      },
-      {
-        name: "Pull-ups",
-        sets: [
-          { setNumber: 1, reps: 10, weight: null },
-          { setNumber: 2, reps: 9, weight: null },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Core & Cardio",
-    startedAt: new Date(),
-    completedAt: null,
-    exercises: [
-      {
-        name: "Plank",
-        sets: [
-          { setNumber: 1, reps: null, weight: null },
-          { setNumber: 2, reps: null, weight: null },
-        ],
-      },
-    ],
-  },
-];
-
-export default function DashboardPage() {
-  const [date, setDate] = useState<Date>(new Date());
+  const date = dateParam ? parse(dateParam, "yyyy-MM-dd", new Date()): new Date()
+  const workouts = await getWorkoutsForUserOnDate(userId!, date);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -73,12 +26,7 @@ export default function DashboardPage() {
         {/* Left: Calendar */}
         <div className="shrink-0">
           <Card className="p-4 shadow-sm [--cell-size:--spacing(10)]">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(d) => d && setDate(d)}
-              className="[--cell-size:--spacing(10)]"
-            />
+            <CalendarPicker selected={date} />
           </Card>
         </div>
 
@@ -92,54 +40,32 @@ export default function DashboardPage() {
               <h2 className="text-lg font-semibold">{format(date, "do MMM yyyy")}</h2>
             </div>
             <Badge variant="secondary" className="text-xs">
-              {MOCK_WORKOUTS.length} logged
+              {workouts.length} logged
             </Badge>
           </div>
 
-          {MOCK_WORKOUTS.length === 0 ? (
+          {workouts.length === 0 ? (
             <div className="rounded-xl border border-dashed bg-background flex flex-col items-center justify-center py-16 text-center">
               <p className="text-muted-foreground text-sm">No workouts logged for this day.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {MOCK_WORKOUTS.map((workout) => (
+            <div className="space-y-3">
+              {workouts.map((workout) => (
                 <Card key={workout.id} className="shadow-sm">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-semibold">{workout.name}</CardTitle>
-                      <Badge variant={workout.completedAt ? "default" : "outline"} className="text-xs">
-                        {workout.completedAt ? "Completed" : "In progress"}
-                      </Badge>
+                  <CardContent className="flex items-center justify-between py-4 px-5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-semibold tabular-nums bg-muted text-muted-foreground rounded-md px-2.5 py-1.5 shrink-0">
+                        {format(workout.startedAt, "HH:mm")}
+                      </span>
+                      <p className="font-semibold text-sm">{workout.name}</p>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    {workout.exercises.map((exercise, i) => (
-                      <div key={exercise.name}>
-                        {i > 0 && <div className="border-t mb-5" />}
-                        <div className="flex items-start justify-between mb-3">
-                          <p className="text-sm font-semibold">{exercise.name}</p>
-                          <span className="text-xs text-muted-foreground">{exercise.sets.length} sets</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {exercise.sets.map((set) => (
-                            <div
-                              key={set.setNumber}
-                              className="flex flex-col items-center rounded-lg bg-muted px-4 py-2 min-w-[64px]"
-                            >
-                              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
-                                Set {set.setNumber}
-                              </span>
-                              <span className="text-sm font-semibold">
-                                {set.reps ?? "—"}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {set.weight ? `${set.weight} kg` : "bodyweight"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${
+                      workout.completedAt
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    }`}>
+                      {workout.completedAt ? "Completed" : "In progress"}
+                    </span>
                   </CardContent>
                 </Card>
               ))}
