@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## IMPORTANT: Docs-First Rule
+
+**Before generating any code, Claude Code MUST first check the `/docs` directory for relevant documentation.** Always read and follow any applicable docs files before writing or modifying code. The docs files are the authoritative reference for this project's conventions, design decisions, and requirements.
+
 ## Commands
 
 ```bash
