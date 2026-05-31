@@ -108,3 +108,7 @@ function aggregateWorkouts(rows: Row[]) {
 }
 
 export type WorkoutWithExercises = Awaited<ReturnType<typeof getWorkoutsForUserOnDate>>[number];
+
+export async function createWorkout(userId: string, name: string, startedAt: Date) {
+  return db.insert(workouts).values({ userId, name, startedAt }).returning();
+}
