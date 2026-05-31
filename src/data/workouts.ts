@@ -112,3 +112,20 @@ export type WorkoutWithExercises = Awaited<ReturnType<typeof getWorkoutsForUserO
 export async function createWorkout(userId: string, name: string, startedAt: Date) {
   return db.insert(workouts).values({ userId, name, startedAt }).returning();
 }
+
+export async function getWorkout(workoutId: number, userId: string) {
+  const rows = await db
+    .select()
+    .from(workouts)
+    .where(and(eq(workouts.id, workoutId), eq(workouts.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateWorkout(workoutId: number, userId: string, name: string, startedAt: Date) {
+  return db
+    .update(workouts)
+    .set({ name, startedAt })
+    .where(and(eq(workouts.id, workoutId), eq(workouts.userId, userId)))
+    .returning();
+}

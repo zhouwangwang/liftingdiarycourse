@@ -1,0 +1,1 @@
+- [Project Docs Conventions](project_docs_conventions.md) — kebab-case /docs filenames; list appended in ## IMPORTANT: Docs-First Rule section of CLAUDE.md
